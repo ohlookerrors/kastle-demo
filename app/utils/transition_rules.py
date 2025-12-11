@@ -170,10 +170,11 @@ TRANSITION_RULES: Dict[str, List[TransitionRule]] = {
         # If user confirmed amount and waterfall complete, proceed to validation (date may be implied as "today")
         (lambda v, c: v.get("payment_amount_received") and v.get("collection_waterfall_completed") and v.get("total_amount_due_informed"), "n67", "Amount confirmed - proceed to validation"),
 
-        # User wants options
-        (lambda v, c: v.get("borrower_wants_options"), "n23", "User wants payment options"),
-        (lambda v, c: v.get("needs_assistance"), "n23", "User needs assistance - show options"),
-        (lambda v, c: v.get("financial_hardship"), "n23", "Financial hardship - show options"),
+        # User wants options - MUST have been asked first (options_question_asked) to prevent false triggers
+        (lambda v, c: v.get("borrower_wants_options") and v.get("options_question_asked"), "n23", "User wants payment options"),
+        (lambda v, c: v.get("borrower_requests_options_directly"), "n23", "User directly requests assistance programs"),
+        (lambda v, c: v.get("needs_assistance") and v.get("options_question_asked"), "n23", "User needs assistance - show options"),
+        (lambda v, c: v.get("financial_hardship") and v.get("options_question_asked"), "n23", "Financial hardship - show options"),
 
         # Delinquency reason capture
         (lambda v, c: v.get("capture_delinquency_reason"), "n19", "Capture delinquency reason"),
@@ -193,8 +194,18 @@ TRANSITION_RULES: Dict[str, List[TransitionRule]] = {
     # PAYMENT VALIDATION (n67)
     # -------------------------------------------------------------------------
     "n67": [
+        # User wants to hear about options - go to payment options
+        (lambda v, c: v.get("borrower_requests_options_directly"), "n23", "User asks about options - show options"),
+
         # Check if user provided both amount and date (actual extracted vars from config)
-        (lambda v, c: v.get("user_provided_payment_amount") and v.get("user_provided_payment_date") and v.get("user_provided_payment_date") not in ["NA", "N/A", None, ""], "n1", "Payment details confirmed - collect account"),
+        # IMPORTANT: Check BOTH amount AND date are not NA/empty
+        (lambda v, c: (
+            v.get("user_provided_payment_amount") and
+            v.get("user_provided_payment_amount") not in ["NA", "N/A", None, ""] and
+            v.get("user_provided_payment_date") and
+            v.get("user_provided_payment_date") not in ["NA", "N/A", None, ""]
+        ), "n1", "Payment details confirmed - collect account"),
+
         # Fallback checks for compatibility
         (lambda v, c: v.get("validation_confirmed"), "n1", "Validated - collect account"),
         (lambda v, c: v.get("user_confirms_amount"), "n1", "Amount confirmed - collect account"),
@@ -278,6 +289,10 @@ TRANSITION_RULES: Dict[str, List[TransitionRule]] = {
     # PAYMENT OPTIONS (n23)
     # -------------------------------------------------------------------------
     "n23": [
+        # User has no more questions about options - go back to payment collection
+        (lambda v, c: v.get("user_has_no_other_questions"), "n49", "No more questions - back to payment"),
+
+        # Legacy/compatibility rules
         (lambda v, c: v.get("option_selected"), "n49", "Option selected - back to payment"),
         (lambda v, c: v.get("ready_to_pay"), "n49", "Ready to pay - back to payment"),
         (lambda v, c: v.get("wants_appointment"), "n56", "Wants appointment - schedule"),

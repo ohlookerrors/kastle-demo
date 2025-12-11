@@ -258,7 +258,6 @@ def get_outbound_prompt(agent_name: str, personality: str, context: Dict):
 #    user_niceties = f"""
 #        After user verification, {get_user_niceties(context)}
 #    """
-
     functions_available = f"""
                AVAILABLE FUNCTIONS (CRITICAL - ALWAYS USE THESE):
         

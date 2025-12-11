@@ -5,7 +5,6 @@ import json
 from dotenv import load_dotenv
 
 load_dotenv()
-
 # =============================================================================
 # DUMMY DATA FOR TESTING
 # To disable: Set USE_DUMMY_DATA=false in .env file

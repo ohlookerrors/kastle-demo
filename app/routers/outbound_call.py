@@ -290,7 +290,7 @@ def get_agent_config(
                 "provider": {
                     "type": "open_ai",
                     "model": "gpt-4o-mini",
-                    "temperature": 0.7
+                    "temperature": 0.3
                 },
                 "prompt": master_prompt or get_default_prompt(customer, selected_agent, language),
                 "functions": get_function_tools(customer)
@@ -304,7 +304,6 @@ def get_agent_config(
             "greeting": greeting_prompt or fallback_greeting
         }
     }
-
 
 def get_function_tools(customer: Dict[str, Any]) -> list:
     """
@@ -763,15 +762,6 @@ async def handle_twilio_call(websocket: WebSocket, caller_phone: str, phone: str
                                 }
                                 await deepgram_ws.send(json.dumps(prompt_update))
                                 logger.info(f"Prompt updated for new node")
-
-                                # Inject agent message to trigger LLM to generate response based on new prompt
-                                # Note: V1 API uses "content" instead of "message"
-                                inject_message = {
-                                    "type": "InjectAgentMessage",
-                                    "content": "Please continue with the next step."
-                                }
-                                await deepgram_ws.send(json.dumps(inject_message))
-                                logger.info(f"InjectAgentMessage sent to trigger agent response")
                         
                         # =================================================
                         # CONVERSATION TEXT LOGGING
@@ -839,14 +829,6 @@ async def handle_twilio_call(websocket: WebSocket, caller_phone: str, phone: str
                                         await deepgram_ws.send(json.dumps(prompt_update))
                                         logger.info(f"✅ [PROMPT UPDATED] New node: {result.get('next_node')}")
                                         logger.info(f"✅ [PROMPT CONTENT] {result['prompt'][:200]}...")
-
-                                        # Trigger agent to respond with new prompt
-                                        inject_message = {
-                                            "type": "InjectAgentMessage",
-                                            "content": "Continue with your current task."
-                                        }
-                                        await deepgram_ws.send(json.dumps(inject_message))
-                                        logger.info(f"✅ [INJECT] Triggered fresh response for new node")
 
                                         # Update local context reference
                                         context = result.get("context", context)
